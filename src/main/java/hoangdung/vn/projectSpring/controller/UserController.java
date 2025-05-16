@@ -11,7 +11,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import hoangdung.vn.projectSpring.dto.UserDTO;
+import hoangdung.vn.projectSpring.dto.response.SuccessResponse;
 import hoangdung.vn.projectSpring.entity.User;
+import hoangdung.vn.projectSpring.repository.UserRepository;
 import hoangdung.vn.projectSpring.service.UserService;
 
 
@@ -20,9 +24,22 @@ import hoangdung.vn.projectSpring.service.UserService;
 public class UserController {
 
     private final UserService userService;
+    private final UserRepository userRepository;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserRepository userRepository) {
+        this.userRepository = userRepository;
         this.userService = userService;
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> me() {
+        String email = "hoangdinhdung0205@gmail.com";
+        User user = this.userRepository.findByEmail(email).orElseThrow(() -> 
+                new RuntimeException("User not found"));
+        UserDTO userDTO = new UserDTO(user.getId(), user.getEmail(), user.getName());
+        //convert sang success response
+        SuccessResponse<UserDTO> successResponse = new SuccessResponse<UserDTO>("Success", userDTO);
+        return ResponseEntity.ok(successResponse);  
     }
 
     // @PostMapping("/create")
