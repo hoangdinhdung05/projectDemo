@@ -5,6 +5,7 @@ import java.util.Base64;
 import java.util.Date;
 import org.springframework.stereotype.Service;
 import hoangdung.vn.projectSpring.config.JwtConfig;
+import hoangdung.vn.projectSpring.repository.BlacklistedTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -15,8 +16,10 @@ public class JwtService {
     
     private final JwtConfig jwtConfig;
     private final Key key;
+    private final BlacklistedTokenRepository blacklistedTokenRepository;
 
-    public JwtService(JwtConfig jwtConfig) {
+    public JwtService(JwtConfig jwtConfig, BlacklistedTokenRepository blacklistedTokenRepository) {
+        this.blacklistedTokenRepository = blacklistedTokenRepository;
         this.jwtConfig = jwtConfig;
         this.key = Keys.hmacShaKeyFor(Base64.getEncoder().encode(jwtConfig.getSecretKey().getBytes()));
     }
@@ -59,12 +62,12 @@ public class JwtService {
         return claims;
     }
 
-    private <T> T getClaimFromToken(String token, java.util.function.Function<Claims, T> claimsResolver) {
+    public <T> T getClaimFromToken(String token, java.util.function.Function<Claims, T> claimsResolver) {
         final Claims claims = getAllClaimsFromToken(token);
         return claimsResolver.apply(claims);
     }
 
-    private Claims getAllClaimsFromToken(String token) {
+    public Claims getAllClaimsFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -141,5 +144,10 @@ public class JwtService {
     public boolean isIssuerToken(String token) {
         String tokenIssuer = getClaimFromToken(token, Claims::getIssuer);
         return this.jwtConfig.getIssuer().equals(tokenIssuer);
+    }
+
+    //check token có trong blacklist không
+    public boolean isBlacklistedToken(String token) {
+        return this.blacklistedTokenRepository.existsByToken(token);
     }
 }

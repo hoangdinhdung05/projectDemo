@@ -106,6 +106,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 );
                 return;
             }
+
             if(!jwtService.isSignatureValid(jwt)){
                 sendErrorResponse(response, 
                     request, 
@@ -122,6 +123,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     HttpServletResponse.SC_UNAUTHORIZED, 
                     "Xác thực không thành công", 
                     "Nguồn Token không hợp lệ."
+                );
+                return;
+            }
+
+            //check blacklist
+            if(this.jwtService.isBlacklistedToken(jwt)) {
+                sendErrorResponse(response, 
+                    request, 
+                    HttpServletResponse.SC_UNAUTHORIZED, 
+                    "Xác thực không thành công", 
+                    "Token đã bị thu hồi."
                 );
                 return;
             }
