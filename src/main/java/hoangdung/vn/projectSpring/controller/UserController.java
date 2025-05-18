@@ -31,17 +31,6 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<?> me() {
-        String email = "hoangdinhdung0205@gmail.com";
-        User user = this.userRepository.findByEmail(email).orElseThrow(() -> 
-                new RuntimeException("User not found"));
-        UserDTO userDTO = new UserDTO(user.getId(), user.getEmail(), user.getName());
-        //convert sang success response
-        SuccessResponse<UserDTO> successResponse = new SuccessResponse<UserDTO>("Success", userDTO);
-        return ResponseEntity.ok(successResponse);  
-    }
-
     // @PostMapping("/create")
     // public ResponseEntity<User> createUser(@RequestBody User newUser) {
     //     try {

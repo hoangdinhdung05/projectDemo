@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class JwtConfig {
     
-
     @Value("${jwt.secret}")
     private String secretKey;
     
@@ -19,6 +18,9 @@ public class JwtConfig {
 
     @Value("${jwt.issuer}")
     private String issuer;
+
+    @Value("${jwt.expirationRefreshToken}")
+    private long refreshTokenExpirationTime;
 
     public String getSecretKey() {
         return secretKey;
@@ -30,6 +32,10 @@ public class JwtConfig {
 
     public String getIssuer() {
         return issuer;
+    }
+
+    public long getRefreshExpirationTime() {
+        return refreshTokenExpirationTime;
     }
 
     //tạo signature key

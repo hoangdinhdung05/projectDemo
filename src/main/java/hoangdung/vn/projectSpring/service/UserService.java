@@ -41,8 +41,10 @@ public class UserService implements UserInterface {
             UserDTO userDTO = new UserDTO(user.getId(), user.getEmail(), user.getName());
             // create token
             String token = this.jwtService.generateToken(userDTO.getId(), userDTO.getEmail());
+            //create refresh token
+            String refreshToken = this.jwtService.generateRefreshToken(userDTO.getId(), userDTO.getEmail());
             //return response
-            return new LoginResponse(token, userDTO);
+            return new LoginResponse(token, refreshToken, userDTO);
 
         } catch (BadCredentialsException e) {
             Map<String, String> errors = new HashMap<>();

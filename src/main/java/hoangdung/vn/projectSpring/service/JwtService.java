@@ -1,11 +1,17 @@
 package hoangdung.vn.projectSpring.service;
 
 import java.security.Key;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import hoangdung.vn.projectSpring.config.JwtConfig;
+import hoangdung.vn.projectSpring.entity.RefreshToken;
 import hoangdung.vn.projectSpring.repository.BlacklistedTokenRepository;
+import hoangdung.vn.projectSpring.repository.RefreshTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -17,8 +23,10 @@ public class JwtService {
     private final JwtConfig jwtConfig;
     private final Key key;
     private final BlacklistedTokenRepository blacklistedTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    public JwtService(JwtConfig jwtConfig, BlacklistedTokenRepository blacklistedTokenRepository) {
+    public JwtService(JwtConfig jwtConfig, BlacklistedTokenRepository blacklistedTokenRepository, RefreshTokenRepository refreshTokenRepository) {
+        this.refreshTokenRepository = refreshTokenRepository;
         this.blacklistedTokenRepository = blacklistedTokenRepository;
         this.jwtConfig = jwtConfig;
         this.key = Keys.hmacShaKeyFor(Base64.getEncoder().encode(jwtConfig.getSecretKey().getBytes()));
@@ -38,6 +46,36 @@ public class JwtService {
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public String generateRefreshToken(long userId, String email) {
+        System.out.println("generate refresh token");
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtConfig.getRefreshExpirationTime());
+
+        String refreshToken = UUID.randomUUID().toString();
+        LocalDateTime localDate  = expiryDate.toInstant()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDateTime();
+
+        Optional<RefreshToken> refreshTokenOptional = this.refreshTokenRepository.findByUserId(userId);
+        if(refreshTokenOptional.isPresent()) {
+            RefreshToken refreshTokenEntity = refreshTokenOptional.get();
+            refreshTokenEntity.setRefreshToken(refreshToken);
+            refreshTokenEntity.setExpiryDate(localDate);
+            this.refreshTokenRepository.save(refreshTokenEntity);
+        } else {
+            RefreshToken refreshTokenEntity = new RefreshToken();
+            refreshTokenEntity.setUserId(userId);
+            refreshTokenEntity.setRefreshToken(refreshToken);
+            refreshTokenEntity.setExpiryDate(localDate);
+            this.refreshTokenRepository.save(refreshTokenEntity);
+        }
+
+        System.out.println("refresh token: " + refreshToken);
+
+        return refreshToken;
+
     }
 
     //get userId from JWT token
@@ -149,5 +187,17 @@ public class JwtService {
     //check token có trong blacklist không
     public boolean isBlacklistedToken(String token) {
         return this.blacklistedTokenRepository.existsByToken(token);
+    }
+
+    public boolean isRefreshTokenValid(String token) {
+        try {
+            RefreshToken refreshToken = this.refreshTokenRepository.findByRefreshToken(token).orElseThrow(() -> 
+                new RuntimeException("Refresh token not found"));
+            LocalDateTime expirationLocalDateTime  = refreshToken.getExpiryDate();
+            Date expirationDate = Date.from(expirationLocalDateTime.atZone(ZoneId.systemDefault()).toInstant());
+            return expirationDate.after(new Date());
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
