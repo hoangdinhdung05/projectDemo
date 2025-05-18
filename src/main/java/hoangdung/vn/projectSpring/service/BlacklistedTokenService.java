@@ -4,8 +4,10 @@ import java.time.ZoneId;
 import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import hoangdung.vn.projectSpring.dto.request.BlacklistedTokenRequest;
+import hoangdung.vn.projectSpring.dto.response.ApiResponse;
 import hoangdung.vn.projectSpring.dto.response.MessageResponse;
 import hoangdung.vn.projectSpring.entity.BlacklistedToken;
 import hoangdung.vn.projectSpring.repository.BlacklistedTokenRepository;
@@ -31,7 +33,8 @@ public class BlacklistedTokenService {
             //check token exists in blacklist
             if(this.blacklistedTokenRepository.existsByToken(request.getToken())) {
                 logger.info("Token already exists in blacklist");
-                return new MessageResponse("Token already exists in blacklist");
+                // return new MessageResponse("Token already exists in blacklist");
+                return ApiResponse.error("Token_Error", "Token đã tồn tại trong black list", HttpStatus.BAD_REQUEST);
             }
 
             Claims claims = this.jwtService.getAllClaimsFromToken(request.getToken());

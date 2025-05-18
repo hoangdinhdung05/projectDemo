@@ -17,8 +17,4 @@ public class ErrorResponse {
     //dùng key-value để lưu các lỗi
     private Map<String, String> errors;
 
-    
-
-
-    
 }

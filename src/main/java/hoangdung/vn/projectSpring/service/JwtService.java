@@ -34,9 +34,12 @@ public class JwtService {
 
     //genarate JWT token
     //dùng id  và email của user để tạo JWT token
-    public String generateToken(long userId, String email) {
+    public String generateToken(long userId, String email, Long expirationTime) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtConfig.getExpirationTime());
+        if(expirationTime == null) {
+            expirationTime = jwtConfig.getExpirationTime();
+        }
+        Date expiryDate = new Date(now.getTime() + expirationTime);
 
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))

@@ -1,5 +1,6 @@
 package hoangdung.vn.projectSpring.repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,5 +14,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     boolean existsByRefreshToken(String refreshToken);
     Optional<RefreshToken> findByRefreshToken(String token);
     Optional<RefreshToken> findByUserId(Long userId);
+    int deleteByExpiryDateBefore(LocalDateTime expiryDate);
     
 }

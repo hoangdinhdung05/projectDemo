@@ -2,27 +2,38 @@ package hoangdung.vn.projectSpring.service;
 
 import hoangdung.vn.projectSpring.dto.UserDTO;
 import hoangdung.vn.projectSpring.dto.request.LoginRequest;
-import hoangdung.vn.projectSpring.dto.response.ErrorResponse;
+import hoangdung.vn.projectSpring.dto.response.ApiResponse;
 import hoangdung.vn.projectSpring.dto.response.LoginResponse;
 import hoangdung.vn.projectSpring.entity.User;
 import hoangdung.vn.projectSpring.repository.UserRepository;
 import hoangdung.vn.projectSpring.service.interfaces.UserInterface;
-import lombok.AllArgsConstructor;
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor
+// @AllArgsConstructor
 public class UserService implements UserInterface {
 
     private final UserRepository userRepository;
-
     private final JwtService jwtService;
-
     private final PasswordEncoder passwordEncoder;
+
+    private final Long defaultExpirationTime;
+
+    public UserService(
+        UserRepository userRepository,
+        JwtService jwtService,
+        PasswordEncoder passwordEncoder,
+        @Value("${jwt.defaultExpiration}") Long defaultExpirationTime
+    ) {
+        this.userRepository = userRepository;
+        this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
+        this.defaultExpirationTime = defaultExpirationTime;
+    }
 
     @Override
     public Object authenticate(LoginRequest request) {
@@ -40,17 +51,18 @@ public class UserService implements UserInterface {
             //check true => create token || login success
             UserDTO userDTO = new UserDTO(user.getId(), user.getEmail(), user.getName());
             // create token
-            String token = this.jwtService.generateToken(userDTO.getId(), userDTO.getEmail());
+            String token = this.jwtService.generateToken(userDTO.getId(), userDTO.getEmail(), defaultExpirationTime);
             //create refresh token
             String refreshToken = this.jwtService.generateRefreshToken(userDTO.getId(), userDTO.getEmail());
             //return response
             return new LoginResponse(token, refreshToken, userDTO);
 
         } catch (BadCredentialsException e) {
-            Map<String, String> errors = new HashMap<>();
-            errors.put("message", e.getMessage());
-            ErrorResponse errorResponse = new ErrorResponse("Lỗi xác thực", errors);
-            return errorResponse;
+            // Map<String, String> errors = new HashMap<>();
+            // errors.put("message", e.getMessage());
+            // ErrorResponse errorResponse = new ErrorResponse("Lỗi xác thực", errors);
+            // return errorResponse;
+            return ApiResponse.error("Auth_error", e.getMessage(), HttpStatus.UNAUTHORIZED);
         }
     }
         
