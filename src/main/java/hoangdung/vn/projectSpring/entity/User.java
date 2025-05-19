@@ -33,6 +33,8 @@ public class User {
     private String phone;
     private String address;
     private String image;
+    private String provider; // "google", "github"
+    private String providerId; // ID của user từ OAuth provider
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
