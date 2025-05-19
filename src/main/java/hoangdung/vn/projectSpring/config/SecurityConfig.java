@@ -31,6 +31,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 //1 Route Auth-No Jwt
                 .requestMatchers("/api/v1/auth/login", 
+                    "/api/v1/reset/forgot-password", 
+                    "/api/v1/reset/password",
                     "/api/v1/auth/refresh").permitAll()
 
                 //2 Route Public
