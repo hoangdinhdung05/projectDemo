@@ -11,7 +11,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import hoangdung.vn.projectSpring.service.JwtService;
-import hoangdung.vn.projectSpring.service.impl.CustomUserDetailsService;
+import hoangdung.vn.projectSpring.service.CustomUserDetailsService;
 import io.jsonwebtoken.Claims;
 
 import org.springframework.lang.NonNull;

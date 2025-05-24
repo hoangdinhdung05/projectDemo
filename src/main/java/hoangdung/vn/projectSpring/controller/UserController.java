@@ -1,7 +1,7 @@
 package hoangdung.vn.projectSpring.controller;
 
 import java.util.List;
-
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,58 +11,64 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import hoangdung.vn.projectSpring.dto.UserDTO;
-import hoangdung.vn.projectSpring.dto.response.SuccessResponse;
-import hoangdung.vn.projectSpring.entity.User;
-import hoangdung.vn.projectSpring.repository.UserRepository;
+import hoangdung.vn.projectSpring.dto.request.CreateUserRequest;
+import hoangdung.vn.projectSpring.dto.response.ApiResponse;
+import hoangdung.vn.projectSpring.dto.response.CreateUserResponse;
+import hoangdung.vn.projectSpring.dto.response.UserResponse;
 import hoangdung.vn.projectSpring.service.UserService;
+import lombok.RequiredArgsConstructor;
 
 
 @RestController
 @RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
-    private final UserRepository userRepository;
+    // private final UserRepository userRepository;
 
-    public UserController(UserService userService, UserRepository userRepository) {
-        this.userRepository = userRepository;
-        this.userService = userService;
+    @PostMapping("/create")
+    public ResponseEntity<?> createUser(@RequestBody CreateUserRequest newUser) {
+        try {
+            System.out.println("CREATE 1:");
+            CreateUserResponse user = userService.createUser(newUser);
+            ApiResponse<CreateUserResponse> response = ApiResponse.ok(user, "Success");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("create_user_failed", e.getMessage(), HttpStatus.BAD_REQUEST));
+        } catch (Exception e) {
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("server_error", "Đã xảy ra lỗi hệ thống", HttpStatus.INTERNAL_SERVER_ERROR));
+        }
     }
 
-    // @PostMapping("/create")
-    // public ResponseEntity<User> createUser(@RequestBody User newUser) {
-    //     try {
 
-    //         User user = userService.handleCreateUser(newUser);
-    //         return ResponseEntity.ok(user);
+    @GetMapping("/list")
+    public ResponseEntity<?> getAllUsers() {
+        ApiResponse<List<UserResponse>> response = ApiResponse.ok(userService.getAllUsers(), "Success");
+        return ResponseEntity.ok(response);
+    }
 
-    //     } catch (Exception e) {
-    //         return ResponseEntity.badRequest().build();
-    //     }
-    // }
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+        UserResponse user = this.userService.getUserById(id);
+        ApiResponse<UserResponse> response = ApiResponse.ok(user, "Success");
 
-    // @GetMapping("/user")
-    // public ResponseEntity<List<User>> getAllUsers() {
-    //     return ResponseEntity.ok(this.userService.getAllUsers());
-    // }
+        return ResponseEntity.ok(response);
+    }
 
-    // @GetMapping("/{id}")
-    // public ResponseEntity<User> getUserById(@PathVariable Long id) {
-    //     return ResponseEntity.ok(this.userService.getUserById(id));
-    // }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable Long id) {
+        return ResponseEntity.ok().body(null);
+        // System.out.println("Xóa tài khoản thành công với id: " + id);
+    }
 
-    // @DeleteMapping("/{id}")
-    // public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-    //     return ResponseEntity.ok().body(null);
-    //     // System.out.println("Xóa tài khoản thành công với id: " + id);
-    // }
-
-    // @PutMapping("/{id}")
-    // public ResponseEntity<User> updateUserById(@RequestBody User user) {
-    //     return ResponseEntity.ok(this.userService.updateUserById(user));
-    // }
-
-
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUserById(@RequestBody CreateUserRequest user) {
+        ApiResponse<UserResponse> response = ApiResponse.ok(this.userService.updateUserById(user), "Success");
+        return ResponseEntity.ok(response);  
+    }
 }

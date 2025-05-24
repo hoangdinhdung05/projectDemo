@@ -28,7 +28,7 @@ public class User {
     private String name;
     @NotBlank(message = "Email không được để trống")
     private String email;
-    @NotBlank(message = "Mật khẩu không được để trống")
+    // @NotBlank(message = "Mật khẩu không được để trống")
     private String password;
     private String phone;
     private String address;

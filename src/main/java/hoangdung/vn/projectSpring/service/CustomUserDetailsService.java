@@ -1,4 +1,4 @@
-package hoangdung.vn.projectSpring.service.impl;
+package hoangdung.vn.projectSpring.service;
 
 import java.util.Collections;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -27,7 +27,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
-                //sau em thêm quyền ở chỗ này này chị    ^.^
                 Collections.emptyList()
         );
     }
