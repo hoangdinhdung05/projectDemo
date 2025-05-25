@@ -1,0 +1,21 @@
+CREATE TABLE products (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    slug VARCHAR(255),
+    description LONGTEXT,
+    short_description TEXT,
+    price DECIMAL(15,2) NOT NULL,
+    sale_price DECIMAL(15,2),
+    stock_quantity INT NOT NULL,
+    sku VARCHAR(50) UNIQUE,
+    thumbnail VARCHAR(500),
+    is_active BIT DEFAULT b'1',
+    is_hot BIT DEFAULT b'0',
+    is_new BIT DEFAULT b'0',
+    category_id BIGINT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_by VARCHAR(255),
+    CONSTRAINT fk_product_category FOREIGN KEY (category_id) REFERENCES categories(id)
+);
