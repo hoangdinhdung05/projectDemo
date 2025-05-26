@@ -16,8 +16,11 @@
 
 ## 🗂️ Cấu trúc thư mục chính:
 
+### 1. Cấu trúc dự án
 ![image](https://github.com/user-attachments/assets/361db810-0df4-468e-bda7-fdd0125fc491)
 
+### 2. Lược đồ ERD
+![image](https://github.com/user-attachments/assets/e7ba189f-83b9-4132-a338-2fc49a2b5b0b)
 
 
 ## 🧑‍💻 Công nghệ sử dụng
