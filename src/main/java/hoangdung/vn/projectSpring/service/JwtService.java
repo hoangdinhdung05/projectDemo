@@ -5,11 +5,17 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import hoangdung.vn.projectSpring.config.JwtConfig;
+import hoangdung.vn.projectSpring.entity.Permission;
 import hoangdung.vn.projectSpring.entity.RefreshToken;
+import hoangdung.vn.projectSpring.entity.Role;
 import hoangdung.vn.projectSpring.repository.BlacklistedTokenRepository;
 import hoangdung.vn.projectSpring.repository.RefreshTokenRepository;
 import io.jsonwebtoken.Claims;
@@ -34,22 +40,36 @@ public class JwtService {
 
     //genarate JWT token
     //dùng id  và email của user để tạo JWT token
-    public String generateToken(long userId, String email, Long expirationTime) {
+    public String generateToken(long userId, String email, Set<Role> roles, Long expirationTime) {
         Date now = new Date();
-        if(expirationTime == null) {
+        if (expirationTime == null) {
             expirationTime = jwtConfig.getExpirationTime();
         }
         Date expiryDate = new Date(now.getTime() + expirationTime);
 
+        // Lấy danh sách tên role
+        List<String> roleNames = roles.stream()
+                .map(Role::getName)
+                .toList();
+
+        // Lấy danh sách tên permission từ tất cả roles
+        Set<String> permissions = roles.stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .map(Permission::getName)
+                .collect(Collectors.toSet());
+
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("email", email)
+                .claim("roles", roleNames)
+                .claim("permissions", permissions)
                 .setIssuedAt(now)
                 .setIssuer(jwtConfig.getIssuer())
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     public String generateRefreshToken(long userId, String email) {
         System.out.println("generate refresh token");

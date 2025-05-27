@@ -1,6 +1,7 @@
 package hoangdung.vn.projectSpring.entity;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -35,6 +36,14 @@ public class User {
     private String image;
     private String provider; // "google", "github"
     private String providerId; // ID của user từ OAuth provider
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

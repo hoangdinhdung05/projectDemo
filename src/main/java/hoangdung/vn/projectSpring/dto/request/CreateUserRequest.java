@@ -1,5 +1,7 @@
 package hoangdung.vn.projectSpring.dto.request;
 
+import java.util.Set;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,4 +19,5 @@ public class CreateUserRequest {
     private String password;
     private String phone;
     private String address;
+    private Set<Long> roleIds;
 }

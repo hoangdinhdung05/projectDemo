@@ -9,6 +9,7 @@ import hoangdung.vn.projectSpring.dto.response.LoginResponse;
 import hoangdung.vn.projectSpring.dto.response.MessageResponse;
 import hoangdung.vn.projectSpring.dto.response.RefreshTokenResponse;
 import hoangdung.vn.projectSpring.entity.RefreshToken;
+import hoangdung.vn.projectSpring.entity.Role;
 import hoangdung.vn.projectSpring.entity.User;
 import hoangdung.vn.projectSpring.repository.RefreshTokenRepository;
 import hoangdung.vn.projectSpring.repository.UserRepository;
@@ -18,6 +19,7 @@ import hoangdung.vn.projectSpring.service.interfaces.UserInterface;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -90,26 +92,47 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
-        if(!jwtService.isRefreshTokenValid(refreshToken)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MessageResponse("RefreshToken không hợp lệ"));
+
+        // 1. Kiểm tra refresh token hợp lệ
+        if (!jwtService.isRefreshTokenValid(refreshToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new MessageResponse("RefreshToken không hợp lệ"));
         }
 
+        // 2. Tìm refresh token trong DB
         Optional<RefreshToken> dbRefreshTokenOptional = this.refreshTokenRepository.findByRefreshToken(refreshToken);
 
+        if (dbRefreshTokenOptional.isPresent()) {
+            RefreshToken dbRefreshToken = dbRefreshTokenOptional.get();
+            Long userId = dbRefreshToken.getUserId();
 
-        if(dbRefreshTokenOptional.isPresent()) {
-            RefreshToken dBRefreshToken = dbRefreshTokenOptional.get();
-            Long userId = dBRefreshToken.getUserId();
-            String email = dBRefreshToken.getUser().getEmail();
-    
-            String newToken = jwtService.generateToken(userId, email, null);
-            String newRefreshToken = jwtService.generateRefreshToken(userId, email);
-            RefreshTokenResponse refreshTokenResource = new RefreshTokenResponse(newToken, newRefreshToken);
-            
-            return ResponseEntity.ok(refreshTokenResource);
+            // 3. Lấy user theo userId
+            Optional<User> userOptional = userRepository.findById(userId);
+            if (userOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new MessageResponse("User không tồn tại"));
+            }
+            User user = userOptional.get();
+
+            // 4. Lấy roles của user
+            Set<Role> roles = user.getRoles();
+
+            // 5. Tạo token mới có roles (và có thể permissions nếu bạn muốn)
+            String newToken = jwtService.generateToken(userId, user.getEmail(), roles, null);
+
+            // 6. Tạo refresh token mới
+            String newRefreshToken = jwtService.generateRefreshToken(userId, user.getEmail());
+
+            // 7. Tạo response trả về
+            RefreshTokenResponse refreshTokenResponse = new RefreshTokenResponse(newToken, newRefreshToken);
+            return ResponseEntity.ok(refreshTokenResponse);
         }
-        return ResponseEntity.internalServerError().body(new MessageResponse("Netword Error !"));
+
+        // 8. Nếu không tìm thấy refresh token trong DB
+        return ResponseEntity.internalServerError()
+            .body(new MessageResponse("Network Error!"));
     }
+
 
     @GetMapping("/me")
     public ResponseEntity<?> me() {

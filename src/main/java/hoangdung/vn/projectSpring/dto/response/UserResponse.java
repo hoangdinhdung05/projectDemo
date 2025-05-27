@@ -1,5 +1,6 @@
 package hoangdung.vn.projectSpring.dto.response;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ public class UserResponse {
     private String email;
     private String phone;
     private String address;
+    private List<Long> roleIds;
     // private String image;
     // private String provider;
     // private String providerId;
