@@ -2,6 +2,10 @@ package hoangdung.vn.projectSpring.controller;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,7 +21,9 @@ import org.springframework.web.multipart.MultipartFile;
 import hoangdung.vn.projectSpring.dto.request.ProductRequest;
 import hoangdung.vn.projectSpring.dto.response.ApiResponse;
 import hoangdung.vn.projectSpring.dto.response.ProductResponse;
+import hoangdung.vn.projectSpring.entity.Product;
 import hoangdung.vn.projectSpring.service.ProductService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -55,10 +61,42 @@ public class ProductController {
         return ResponseEntity.ok(apiResponse);
     }
 
-    @GetMapping
-    public ResponseEntity<?> getAllProducts() {
-        List<ProductResponse> products = productService.getAllProducts();
-        ApiResponse<List<ProductResponse>> apiResponse = ApiResponse.ok(products, "Success");
+    // @GetMapping("/list")
+    // public ResponseEntity<?> getAllProducts() {
+    //     List<ProductResponse> products = productService.getAllProducts();
+    //     ApiResponse<List<ProductResponse>> apiResponse = ApiResponse.ok(products, "Success");
+    //     return ResponseEntity.ok(apiResponse);
+    // }
+
+    @GetMapping("/list")
+    public ResponseEntity<?> getAllProducts(HttpServletRequest request) {
+
+        Map<String, String[]> parameters = request.getParameterMap();
+        List<ProductResponse> products = (List<ProductResponse>) this.productService.paginate(parameters);
+
+        if (products.isEmpty()) {
+            ApiResponse<List<ProductResponse>> apiResponse = ApiResponse.ok(products, "Success");
+            return ResponseEntity.ok(apiResponse);
+        }
+        Page<ProductResponse> ProductResponse = (Page<ProductResponse>) this.productService.paginate(parameters);
+        ApiResponse<Page<ProductResponse>> apiResponse = ApiResponse.ok(ProductResponse, "Success");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<?> getAll(HttpServletRequest request) {
+        Map<String, String[]> parameters = request.getParameterMap();
+        List<Product> products = this.productService.getAll(parameters);
+        List<ProductResponse> productResponses = products.stream()
+            .map(p -> ProductResponse.builder()
+                    .id(p.getId())
+                    .name(p.getName())
+                    .price(p.getPrice())
+                    .thumbnail(p.getThumbnail())
+                    .build())
+            .collect(Collectors.toList()
+        );
+        ApiResponse<List<ProductResponse>> apiResponse = ApiResponse.ok(productResponses, "Success");
         return ResponseEntity.ok(apiResponse);
     }
 

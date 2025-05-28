@@ -5,9 +5,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import hoangdung.vn.projectSpring.dto.request.ProductRequest;
@@ -15,6 +24,8 @@ import hoangdung.vn.projectSpring.dto.response.ProductResponse;
 import hoangdung.vn.projectSpring.entity.Category;
 import hoangdung.vn.projectSpring.entity.Product;
 import hoangdung.vn.projectSpring.entity.ProductImage;
+import hoangdung.vn.projectSpring.helper.BaseSpecification;
+import hoangdung.vn.projectSpring.helper.FilterParameter;
 import hoangdung.vn.projectSpring.repository.CategoryRepository;
 import hoangdung.vn.projectSpring.repository.ProductImageRepository;
 import hoangdung.vn.projectSpring.repository.ProductRepository;
@@ -24,7 +35,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class ProductService implements ProductInterface {
+public class ProductService extends BaseService implements ProductInterface {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
@@ -147,4 +160,52 @@ public class ProductService implements ProductInterface {
                 imageUrls
         );
     }
+
+    @Override
+    public Page<ProductResponse> paginate(Map<String, String[]> parameters) {
+        int page = parameters.containsKey("page") ? Integer.parseInt(parameters.get("page")[0]) : 1;
+        int perpage = parameters.containsKey("perpage") ? Integer.parseInt(parameters.get("perpage")[0]) : 10;
+
+        // Sort
+        String sortParam = parameters.containsKey("sort") ? parameters.get("sort")[0] : null;
+        Sort sort = createSort(sortParam);
+        // Filters
+        String keyword = FilterParameter.filterKeyword(parameters);
+        Map<String, String> simpleFilters = FilterParameter.filterSimple(parameters);
+        Map<String, Map<String, String>> complexFilters = FilterParameter.filterComplex(parameters);
+
+        logger.info("Keyword: " + keyword);
+        logger.info("Simple filters: " + simpleFilters);
+        logger.info("Complex filters: " + complexFilters);
+        // logger.info("Date range filters: " + dateRangeFilters);
+
+        Specification<Product> specs = Specification.where(BaseSpecification.<Product>keywordSpec(keyword, "name"))
+                .and(BaseSpecification.<Product>whereSpec(simpleFilters))
+                .and(BaseSpecification.<Product>complexWhereSpec(complexFilters));
+
+        Pageable pageable = PageRequest.of(page - 1, perpage, sort);    
+        Page<Product> productPage = this.productRepository.findAll(specs, pageable);
+
+        return productPage.map(this::mapToResponse);
+    }
+
+    @Override
+    public List<Product> getAll(Map<String, String[]> parameters) {
+        String sortParam = parameters.containsKey("sort") ? parameters.get("sort")[0] : null;
+        Sort sort = createSort(sortParam);
+        String keyword = FilterParameter.filterKeyword(parameters);
+        Map<String, String> simpleFilters = FilterParameter.filterSimple(parameters);
+        Map<String, Map<String, String>> complexFilters = FilterParameter.filterComplex(parameters);
+
+        logger.info("Keyword: " + keyword);
+        logger.info("Simple filters: " + simpleFilters);
+        logger.info("Complex filters: " + complexFilters);
+
+        Specification<Product> specs = Specification.where(BaseSpecification.<Product>keywordSpec(keyword, "name"))
+                .and(BaseSpecification.<Product>whereSpec(simpleFilters))
+                .and(BaseSpecification.<Product>complexWhereSpec(complexFilters));
+
+        return this.productRepository.findAll(specs, sort);
+    }
+
 }
