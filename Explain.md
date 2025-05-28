@@ -1,3 +1,8 @@
+Luồng role-permission chưa fix
+PS C:\projectSpring> git checkout test-new-logic   
+>> 
+Switched to branch 'test-new-logic'
+
 //Luồng Cart
 Frontend (User) 
     ⇩

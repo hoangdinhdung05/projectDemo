@@ -7,15 +7,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import hoangdung.vn.projectSpring.dto.request.OrderItemRequest;
 import hoangdung.vn.projectSpring.dto.request.OrderRequest;
 import hoangdung.vn.projectSpring.dto.response.OrderDetailResponse;
 import hoangdung.vn.projectSpring.dto.response.OrderResponse;
+import hoangdung.vn.projectSpring.entity.Discount;
 import hoangdung.vn.projectSpring.entity.Order;
 import hoangdung.vn.projectSpring.entity.OrderDetail;
 import hoangdung.vn.projectSpring.entity.Product;
 import hoangdung.vn.projectSpring.entity.User;
+import hoangdung.vn.projectSpring.helper.MessageEmail;
 import hoangdung.vn.projectSpring.repository.OrderDetailsRepository;
 import hoangdung.vn.projectSpring.repository.OrderRepository;
 import hoangdung.vn.projectSpring.repository.ProductRepository;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class OrderService implements OrderInterface {
 
     private final OrderRepository orderRepository;
@@ -33,6 +35,8 @@ public class OrderService implements OrderInterface {
     private final ProductRepository productRepository;
     private final InvoiceService invoiceService;
     private final EmailService mailService;
+    private final DiscountService discountService;
+    private final MessageEmail messageEmail;
 
     // Mapping từ Order sang OrderResponse
     private OrderResponse mapToOrderResponse(Order order) {
@@ -59,21 +63,17 @@ public class OrderService implements OrderInterface {
                 .build();
     }
 
-    @Override
     @Transactional
+    @Override
     public OrderResponse createOrder(OrderRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Order order = new Order();
-        order.setUser(user);
-        order.setNote(request.getNote());
-        order.setShippingAddress(request.getShippingAddress());
-        order.setStatus("PENDING");
-        order.setCreatedAt(LocalDateTime.now());
+        Discount discount = null;
+        if (request.getDiscountCode() != null && !request.getDiscountCode().isEmpty()) {
+            discount = discountService.validateAndGetDiscount(request.getDiscountCode());
+        }
 
-        // Tính tổng giá trị đơn hàng và lưu OrderDetail
-        // Khởi tạo tổng giá trị đơn hàng
         BigDecimal totalPrice = BigDecimal.ZERO;
         List<OrderDetail> orderDetails = new ArrayList<>();
 
@@ -85,7 +85,6 @@ public class OrderService implements OrderInterface {
             totalPrice = totalPrice.add(itemTotal);
 
             OrderDetail detail = new OrderDetail();
-            detail.setOrder(order);
             detail.setProduct(product);
             detail.setQuantity(item.getQuantity());
             detail.setPrice(product.getPrice());
@@ -94,23 +93,52 @@ public class OrderService implements OrderInterface {
             orderDetails.add(detail);
         }
 
-        order.setTotalPrice(totalPrice);
+        BigDecimal totalAfterDiscount = discount != null
+                ? discountService.applyDiscount(totalPrice, discount)
+                : totalPrice;
+
+        // BigDecimal discountAmount = totalPrice.subtract(totalAfterDiscount);
+
+        Order order = new Order();
+        order.setUser(user);
+        order.setNote(request.getNote());
+        order.setShippingAddress(request.getShippingAddress());
+        order.setStatus("PENDING");
+        order.setCreatedAt(LocalDateTime.now());
+        order.setTotalPrice(totalAfterDiscount);
+        order.setDiscount(discount);
         order.setOrderDetails(orderDetails);
 
+        orderDetails.forEach(detail -> detail.setOrder(order)); // thiết lập quan hệ 2 chiều
 
-        Order savedOrder = orderRepository.save(order); // Cascade sẽ lưu cả OrderDetail nếu được cấu hình
-        byte[] pdf = invoiceService.generateInvoicePdf(savedOrder);
+        Order savedOrder = orderRepository.save(order);
 
-        // Gửi mail kèm hóa đơn
-        mailService.sendOrderConfirmationWithInvoice(
-            savedOrder.getUser().getEmail(),
-            "Đơn hàng #" + savedOrder.getId() + " đã đặt thành công!",
-            "Cảm ơn bạn đã đặt hàng tại ShopABC.\nVui lòng xem hóa đơn đính kèm.",
-            pdf
-        );
+        if (discount != null) {
+            discountService.increaseUsedCount(discount);
+        }
+
+        // byte[] pdf = invoiceService.generateInvoicePdf(savedOrder);
+
+        // Soạn nội dung email
+        // StringBuilder emailBody = new StringBuilder();
+        // emailBody.append("Cảm ơn bạn đã đặt hàng tại HoangDungShop.\n\n");
+        // emailBody.append("Thông tin đơn hàng:\n");
+        // emailBody.append("Tổng giá gốc: ").append(totalPrice).append(" VND\n");
+
+        // if (discount != null) {
+        //     emailBody.append("Mã giảm giá: ").append(discount.getCode()).append("\n");
+        //     emailBody.append("Số tiền giảm: ").append(discountAmount).append(" VND\n");
+        // }
+
+        // emailBody.append("Tổng thanh toán: ").append(totalAfterDiscount).append(" VND\n");
+        // emailBody.append("\nVui lòng xem hóa đơn đính kèm.");
+
+        this.messageEmail.sendOrderWithInvoice(savedOrder);
 
         return mapToOrderResponse(savedOrder);
     }
+
+
 
     @Override
     public OrderResponse getOrderById(Long orderId) {

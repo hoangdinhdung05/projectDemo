@@ -8,5 +8,6 @@ public class OrderRequest {
     private Long userId;
     private String note;
     private String shippingAddress;
-    private List<OrderItemRequest> items; // danh sách sản phẩm
+    private List<OrderItemRequest> items;
+    private String discountCode;
 }

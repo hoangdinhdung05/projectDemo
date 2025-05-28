@@ -1,11 +1,9 @@
 package hoangdung.vn.projectSpring.entity;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-
 import lombok.*;
 
 @Entity
@@ -45,6 +43,10 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDetail> orderDetails;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "discount_id")
+    private Discount discount;
 
     @PrePersist
     protected void onCreate() {
